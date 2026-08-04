@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getRegistrations } from "@/lib/admin/data";
 import { StatusBadge, AttentionBadge } from "@/components/admin/StatusBadge";
 
@@ -25,9 +26,19 @@ export default async function AdminRegistrations() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand-forest">Inscripciones</h1>
-        <span className="text-sm text-brand-forest/60">{rows.length} registros</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-brand-forest/60">{rows.length} registros</span>
+          {rows.length > 0 && (
+            <Link
+              href="/admin/inscripciones/imprimir"
+              className="rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-ivory"
+            >
+              Imprimir / PDF
+            </Link>
+          )}
+        </div>
       </header>
 
       {rows.length === 0 ? (
@@ -51,9 +62,17 @@ export default async function AdminRegistrations() {
               {rows.map((r) => {
                 const pet = r.pets?.[0];
                 return (
-                  <tr key={r.id} className="border-b border-brand-forest/5 last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs text-brand-forest/70">
-                      {r.registration_code}
+                  <tr
+                    key={r.id}
+                    className="border-b border-brand-forest/5 transition-colors last:border-0 hover:bg-brand-ivory/60"
+                  >
+                    <td className="px-4 py-3 font-mono text-xs">
+                      <Link
+                        href={`/admin/inscripciones/${r.id}`}
+                        className="text-brand-lilac underline-offset-2 hover:underline"
+                      >
+                        {r.registration_code}
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-brand-forest">{r.full_name}</div>

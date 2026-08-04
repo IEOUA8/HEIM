@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/browser";
 
 export function LogoutButton() {
   const router = useRouter();
   return (
     <button
       onClick={async () => {
-        await fetch("/api/admin/logout", { method: "POST" });
+        await createClient().auth.signOut();
         router.replace("/admin/login");
         router.refresh();
       }}

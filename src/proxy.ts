@@ -1,24 +1,48 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_COOKIE, verifySession } from "@/lib/admin/auth";
 
-// Protege el panel privado (§11.1). El login queda fuera del gate.
+// Protege el panel privado con la sesión de Supabase Auth (§11.1).
 // (Next 16 renombró `middleware` a `proxy`.)
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const isLogin = pathname === "/admin/login";
-  const authed = await verifySession(request.cookies.get(ADMIN_COOKIE)?.value);
+  let response = NextResponse.next({ request });
 
-  if (!authed && !isLogin) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isLogin = request.nextUrl.pathname === "/admin/login";
+
+  if (!user && !isLogin) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     return NextResponse.redirect(url);
   }
-  if (authed && isLogin) {
+  if (user && isLogin) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin";
     return NextResponse.redirect(url);
   }
-  return NextResponse.next();
+
+  return response;
 }
 
 export const config = {

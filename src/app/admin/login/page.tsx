@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/browser";
 import { Logo } from "@/components/brand/Logo";
 
 export default function AdminLogin() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -14,18 +16,15 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) {
-      router.replace("/admin");
-      router.refresh();
-    } else {
-      setError("Contraseña incorrecta.");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError("Correo o contraseña incorrectos.");
       setLoading(false);
+      return;
     }
+    router.replace("/admin");
+    router.refresh();
   };
 
   return (
@@ -40,6 +39,19 @@ export default function AdminLogin() {
             <h1 className="text-xl font-bold text-brand-forest">Panel administrativo</h1>
             <p className="text-sm text-brand-forest/60">Acceso privado · Caminata HEIM</p>
           </div>
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="email" className="block text-sm font-medium text-brand-forest">
+            Correo
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-xl border-2 border-brand-forest/15 bg-white px-4 py-3 text-base focus:border-brand-lilac focus:outline-none"
+          />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="pw" className="block text-sm font-medium text-brand-forest">
@@ -57,7 +69,7 @@ export default function AdminLogin() {
         {error && <p className="text-sm text-brand-orange">{error}</p>}
         <button
           type="submit"
-          disabled={loading || !password}
+          disabled={loading || !email || !password}
           className="w-full rounded-full bg-brand-forest px-6 py-3 font-semibold text-brand-ivory disabled:opacity-50"
         >
           {loading ? "Ingresando…" : "Ingresar"}
