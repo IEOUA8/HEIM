@@ -29,7 +29,9 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [showErrors, setShowErrors] = useState(false);
   const [direction, setDirection] = useState(1);
   const [phase, setPhase] = useState<"steps" | "review" | "success" | "submitting">("steps");
-  const [code, setCode] = useState<string | null>(null);
+  // Snapshot de la inscripción enviada: los datos se conservan para la
+  // confirmación y el comprobante aunque el borrador se reinicie.
+  const [submitted, setSubmitted] = useState<SubmittedData | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isDuplicate, setIsDuplicate] = useState(false);
 
@@ -108,7 +110,12 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
       }
       if (!res.ok) throw new Error(`status ${res.status}`);
       const json = (await res.json()) as { code: string };
-      setCode(json.code);
+      setSubmitted({
+        code: json.code,
+        fullName: state.participant.fullName,
+        attendsWithPet: !!state.attendsWithPet,
+        petName: state.attendsWithPet ? state.pet?.name ?? "" : "",
+      });
       setPhase("success");
       form.reset();
     } catch {
@@ -174,8 +181,8 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
             >
               {!hydrated ? (
                 <p className="text-sm text-brand-forest/50">Cargando…</p>
-              ) : phase === "success" ? (
-                <SuccessScreen code={code!} state={state} />
+              ) : phase === "success" && submitted ? (
+                <SuccessScreen data={submitted} />
               ) : phase === "review" || phase === "submitting" ? (
                 <ReviewScreen
                   state={state}
@@ -298,6 +305,29 @@ function ReviewScreen({
   );
 }
 
+type SubmittedData = {
+  code: string;
+  fullName: string;
+  attendsWithPet: boolean;
+  petName: string;
+};
+
+/** Carga el logo HEIM como data URL para incrustarlo en el PDF. */
+async function loadLogo(): Promise<string | null> {
+  try {
+    const res = await fetch("/heim-logo.png");
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 function calendarUrl(code: string): string {
   // Enlace a Google Calendar con los datos del evento (§7 Paso 13).
   const start = "20260906T130000Z"; // 2026-09-06 08:00 -05:00 en UTC
@@ -312,32 +342,114 @@ function calendarUrl(code: string): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function SuccessScreen({
-  code,
-  state,
-}: {
-  code: string;
-  state: ReturnType<typeof useRegistrationForm>["state"];
-}) {
-  const downloadComprobante = () => {
-    const lines = [
-      "COMPROBANTE DE INSCRIPCIÓN — HEIM",
-      "Caminata por los animales · 6 de septiembre de 2026",
-      "",
-      `Código: ${code}`,
-      `Participante: ${state.participant.fullName}`,
-      state.attendsWithPet ? `Mascota: ${state.pet?.name ?? "—"}` : "Asiste sin mascota",
-      "",
-      "Recomendaciones: correa siempre, bolsas para desechos,",
-      "bozal cuando corresponda. ¡Gracias por participar!",
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `comprobante-${code}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+function SuccessScreen({ data }: { data: SubmittedData }) {
+  const [generating, setGenerating] = useState(false);
+
+  // Genera el comprobante en PDF con la marca HEIM (jsPDF cargado bajo demanda).
+  const downloadComprobante = async () => {
+    setGenerating(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const W = doc.internal.pageSize.getWidth();
+
+      // Encabezado con fondo verde bosque
+      doc.setFillColor(35, 63, 53);
+      doc.rect(0, 0, W, 110, "F");
+      let textX = 40;
+      const logo = await loadLogo();
+      if (logo) {
+        try {
+          doc.addImage(logo, "PNG", 40, 30, 50, 50);
+          textX = 108;
+        } catch {
+          textX = 40;
+        }
+      }
+      doc.setTextColor(242, 241, 231);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Comprobante de inscripción", textX, 54);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text("HEIM · Caminata por los animales", textX, 76);
+
+      // Caja del código
+      let y = 150;
+      doc.setDrawColor(35, 63, 53);
+      doc.setLineWidth(1);
+      doc.roundedRect(40, y, W - 80, 62, 8, 8);
+      doc.setTextColor(120, 120, 120);
+      doc.setFontSize(9);
+      doc.text("CÓDIGO DE INSCRIPCIÓN", 56, y + 24);
+      doc.setTextColor(204, 98, 27);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.text(data.code, 56, y + 50);
+
+      // Detalles
+      y += 104;
+      doc.setTextColor(35, 63, 53);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("¡Tu inscripción está confirmada!", 40, y);
+      y += 30;
+      doc.setFontSize(12);
+      const rows: [string, string][] = [
+        ["Participante", data.fullName],
+        [
+          "Participación",
+          data.attendsWithPet
+            ? `Con mi perro${data.petName ? ` (${data.petName})` : ""}`
+            : "Sin mascota",
+        ],
+        ["Fecha", "Domingo 06 de septiembre de 2026"],
+      ];
+      for (const [label, value] of rows) {
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(35, 63, 53);
+        doc.text(`${label}:`, 40, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.text(value, 150, y);
+        y += 22;
+      }
+
+      // Recomendaciones
+      y += 16;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(35, 63, 53);
+      doc.text("Recomendaciones de seguridad", 40, y);
+      y += 20;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      for (const r of [
+        "Lleva a tu perro siempre con correa durante el recorrido.",
+        "Lleva bolsas para recoger sus desechos.",
+        "Usa bozal y traílla adecuados cuando corresponda.",
+        "Confirma que puede realizar actividad física moderada.",
+      ]) {
+        doc.text(`•  ${r}`, 48, y);
+        y += 20;
+      }
+
+      // Pie
+      y += 18;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(40, y, W - 40, y);
+      y += 22;
+      doc.setTextColor(120, 120, 120);
+      doc.setFontSize(10);
+      doc.text(
+        "Gracias por caminar con nosotros. Presenta este comprobante el día del evento.",
+        40,
+        y,
+      );
+
+      doc.save(`comprobante-${data.code}.pdf`);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const share = async () => {
@@ -368,12 +480,12 @@ function SuccessScreen({
         <h2 className="text-2xl font-bold text-brand-forest">¡Tu inscripción está confirmada!</h2>
         <p className="mt-1 text-sm text-brand-forest/70">
           Gracias por caminar por quienes aún esperan un hogar
-          {state.pet?.name ? `, junto a ${state.pet.name}` : ""}.
+          {data.petName ? `, junto a ${data.petName}` : ""}.
         </p>
       </div>
       <div className="rounded-2xl border-2 border-dashed border-brand-forest/20 bg-white py-4">
         <p className="text-xs uppercase tracking-wide text-brand-forest/50">Código de inscripción</p>
-        <p className="mt-1 text-xl font-bold tracking-wide text-brand-orange">{code}</p>
+        <p className="mt-1 text-xl font-bold tracking-wide text-brand-orange">{data.code}</p>
       </div>
       <div className="rounded-2xl bg-brand-sky/15 px-4 py-3 text-left text-sm text-brand-forest/80">
         <p className="font-semibold text-brand-forest">Caminata por los animales</p>
@@ -386,7 +498,7 @@ function SuccessScreen({
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         <a
-          href={calendarUrl(code)}
+          href={calendarUrl(data.code)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-full border-2 border-brand-forest/15 px-4 py-2.5 text-sm font-semibold text-brand-forest hover:border-brand-forest/40"
@@ -396,9 +508,10 @@ function SuccessScreen({
         <button
           type="button"
           onClick={downloadComprobante}
-          className="rounded-full border-2 border-brand-forest/15 px-4 py-2.5 text-sm font-semibold text-brand-forest hover:border-brand-forest/40"
+          disabled={generating}
+          className="rounded-full border-2 border-brand-forest/15 px-4 py-2.5 text-sm font-semibold text-brand-forest hover:border-brand-forest/40 disabled:opacity-50"
         >
-          Descargar comprobante
+          {generating ? "Generando PDF…" : "Descargar comprobante"}
         </button>
         <button
           type="button"
