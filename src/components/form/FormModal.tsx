@@ -29,6 +29,7 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [direction, setDirection] = useState(1);
   const [phase, setPhase] = useState<"steps" | "review" | "success" | "submitting">("steps");
   const [code, setCode] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const stepList = useMemo(() => activeSteps(state), [state]);
   const stepIndex = Math.min(state.currentStep, stepList.length - 1);
@@ -81,13 +82,30 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
 
   const submit = async () => {
     setPhase("submitting");
-    // TODO(backend): POST /api/registrations (§13). Simulación mientras tanto.
-    await new Promise((r) => setTimeout(r, 900));
-    const year = new Date().getFullYear();
-    const serial = String(Math.floor(Math.random() * 900000) + 100000);
-    setCode(`HEIM-${year}-${serial}`);
-    setPhase("success");
-    form.reset();
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/registrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          attendsWithPet: state.attendsWithPet,
+          participant: state.participant,
+          pet: state.attendsWithPet ? state.pet : undefined,
+          consents: state.consents,
+        }),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const json = (await res.json()) as { code: string };
+      setCode(json.code);
+      setPhase("success");
+      form.reset();
+    } catch {
+      // Mantener los datos en el navegador y permitir reintento (§10).
+      setSubmitError(
+        "No pudimos guardar tu inscripción. Tus datos siguen aquí; intenta nuevamente.",
+      );
+      setPhase("review");
+    }
   };
 
   const progressCurrent =
@@ -147,7 +165,7 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
               ) : phase === "success" ? (
                 <SuccessScreen code={code!} state={state} />
               ) : phase === "review" || phase === "submitting" ? (
-                <ReviewScreen state={state} />
+                <ReviewScreen state={state} error={submitError} />
               ) : (
                 step?.render(api)
               )}
@@ -196,13 +214,24 @@ function Row({ label, value }: { label: string; value?: string }) {
   );
 }
 
-function ReviewScreen({ state }: { state: ReturnType<typeof useRegistrationForm>["state"] }) {
+function ReviewScreen({
+  state,
+  error,
+}: {
+  state: ReturnType<typeof useRegistrationForm>["state"];
+  error?: string | null;
+}) {
   const doc = state.participant.documentNumber
     ? `${DOC_LABELS[state.participant.documentType] ?? ""} ••••${state.participant.documentNumber.slice(-4)}`
     : undefined;
   return (
     <div className="space-y-3">
       <StepHeader title="Revisa tu inscripción" help="Confirma que todo esté correcto antes de enviar." />
+      {error && (
+        <p className="rounded-xl bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange" role="alert">
+          {error}
+        </p>
+      )}
       <div className="divide-y divide-brand-forest/10 rounded-2xl bg-white px-4">
         <Row label="Nombre" value={state.participant.fullName} />
         <Row label="Teléfono" value={state.participant.phone} />

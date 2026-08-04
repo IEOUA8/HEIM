@@ -30,7 +30,7 @@ export type EventConfig = {
 export const eventConfig: EventConfig = {
   name: "Caminata por los animales",
   shortName: "Caminata HEIM",
-  slug: "caminata-heim-2026",
+  slug: "caminata-heim",
   beneficiary: "Hogar de paso Ángeles de la Calle, Circasia",
   purposeText:
     "Tu participación ayuda a impulsar jornadas de esterilización para animales rescatados. Completar la inscripción toma aproximadamente 3 minutos.",
@@ -39,8 +39,8 @@ export const eventConfig: EventConfig = {
     "Snack para el participante y su perro",
     "Actividad con propósito social",
   ],
-  location: { name: "Por confirmar" },
-  startsAt: null,
+  location: { name: "Circasia, Quindío" },
+  startsAt: "2026-09-06T08:00:00-05:00",
   registrationDeadline: null,
   capacity: null,
   registrationOpen: true,
