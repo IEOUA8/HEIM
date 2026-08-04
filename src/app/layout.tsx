@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        url: "/og-cover.png",
+        url: "/og-cover.png?v=2",
         width: 1672,
         height: 941,
         alt: "Caminata por los animales — Formulario de inscripción · 6 de septiembre 2026",
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: ["/og-cover.png"],
+    images: ["/og-cover.png?v=2"],
   },
   icons: {
     icon: "/icon.png",
@@ -83,7 +83,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     description,
-    image: [`${siteUrl}/og-cover.png`],
+    image: [`${siteUrl}/og-cover.png?v=2`],
     organizer: { "@type": "Organization", name: "HEIM", url: siteUrl },
     location: {
       "@type": "Place",
