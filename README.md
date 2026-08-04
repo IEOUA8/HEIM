@@ -83,6 +83,11 @@ El motor filtra por `isActive`, recalcula el total de pasos y el progreso autom�
   enmascarado, **cambio de estados con historial**, notas internas y
   **vista imprimible / PDF** de la lista.
 - SEO completo: Open Graph con portada, Twitter Card, favicon (logo), JSON-LD.
+- **Búsqueda y filtros** en la tabla (estado, mascota, tamaño, atención) +
+  **exportación CSV** con documento enmascarado (§11.3, §20).
+- **Detección de duplicados** por teléfono con opción de continuar (§8).
+- **Row Level Security** activo en todas las tablas: la clave anónima no
+  puede leer datos; el acceso es solo vía service-role en servidor (§17).
 
 ## Acceso admin
 
@@ -91,7 +96,8 @@ crea desde el dashboard de Supabase (Authentication → Users) o vía Admin API.
 
 ## Pendiente (siguientes fases, §25)
 
-- Roles diferenciados (§11.1) y políticas RLS (§17).
-- Filtros/búsqueda y exportación CSV/XLSX en la tabla (§11.3, §20).
-- Flujo de duplicados por teléfono/documento (§8).
+- Roles diferenciados por usuario admin (§11.1) — hoy hay un único rol.
+- Políticas RLS granulares por rol (hoy RLS niega todo al anon; el acceso
+  es solo por service-role en servidor).
+- Exportación XLSX nativa (hoy CSV, que Excel abre bien).
 - Correo de confirmación (Resend) — pospuesto por ahora.
