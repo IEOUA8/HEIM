@@ -33,7 +33,7 @@ export const eventConfig: EventConfig = {
   slug: "caminata-heim",
   beneficiary: "Hogar de paso Ángeles de la Calle",
   purposeText:
-    "Llegamos a nuestro primer año y queremos celebrarlo con nuevos proyectos para seguir ayudando, pero esta vez queremos hacerlo contigo.",
+    "Y queremos celebrarlo con nuevos proyectos para seguir ayudando, pero esta vez queremos hacerlo contigo.",
   includes: [
     "Póliza de seguro para el evento",
     "Snack para el participante y su perro",

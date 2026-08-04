@@ -12,7 +12,7 @@ export default function Home() {
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center gap-8 px-6 py-12">
       <div className="flex flex-col items-center gap-5 text-center">
         <Logo size={148} />
-        <p className="inline-flex rounded-full bg-brand-lilac/15 px-3 py-1 text-xs font-semibold text-brand-lilac">
+        <p className="inline-flex rounded-full bg-brand-lilac/15 px-5 py-2 text-base font-semibold text-brand-lilac">
           {eventConfig.shortName}
         </p>
       </div>
@@ -33,6 +33,7 @@ export default function Home() {
           </svg>
           Domingo 06 de septiembre de 2026
         </p>
+        <p className="text-2xl font-bold text-brand-orange">¡Llegamos a nuestro primer año!</p>
         <p className="text-lg text-brand-forest/75">{eventConfig.purposeText}</p>
       </div>
 
