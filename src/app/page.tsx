@@ -19,7 +19,7 @@ export default function Home() {
 
       <div className="space-y-4">
         <h1 className="text-4xl font-bold leading-tight text-brand-forest text-balance">
-          Camina con nosotros por quienes aún esperan un hogar
+          ¡Llegamos a nuestro primer año!
         </h1>
         <p className="inline-flex items-center gap-2 rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-ivory">
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
@@ -33,7 +33,6 @@ export default function Home() {
           </svg>
           Domingo 06 de septiembre de 2026
         </p>
-        <p className="text-2xl font-bold text-brand-orange">¡Llegamos a nuestro primer año!</p>
         <p className="text-lg text-brand-forest/75">{eventConfig.purposeText}</p>
       </div>
 
