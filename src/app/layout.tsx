@@ -30,7 +30,6 @@ export const metadata: Metadata = {
     "inscripción caminata",
     "esterilización animales rescatados",
     "evento con perros",
-    "Circasia",
     "Ángeles de la Calle",
   ],
   authors: [{ name: "HEIM" }],
@@ -88,7 +87,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     location: {
       "@type": "Place",
       name: eventConfig.location.name,
-      address: "Circasia, Quindío, Colombia",
+      address: "Colombia",
     },
   };
 

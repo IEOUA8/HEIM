@@ -377,7 +377,12 @@ function SuccessScreen({
       </div>
       <div className="rounded-2xl bg-brand-sky/15 px-4 py-3 text-left text-sm text-brand-forest/80">
         <p className="font-semibold text-brand-forest">Caminata por los animales</p>
-        <p>6 de septiembre de 2026 · {eventConfig.location.name}</p>
+        <p>
+          6 de septiembre de 2026
+          {eventConfig.location.name && eventConfig.location.name !== "Por confirmar"
+            ? ` · ${eventConfig.location.name}`
+            : ""}
+        </p>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         <a

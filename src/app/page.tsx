@@ -31,7 +31,7 @@ export default function Home() {
               strokeLinejoin="round"
             />
           </svg>
-          Domingo 06 de septiembre de 2026 · Circasia, Quindío
+          Domingo 06 de septiembre de 2026
         </p>
         <p className="text-lg text-brand-forest/75">{eventConfig.purposeText}</p>
       </div>
@@ -54,7 +54,7 @@ export default function Home() {
 
       <p className="text-sm text-brand-forest/60">
         Los fondos recaudados serán invertidos en la esterilización de los animales
-        albergados en el hogar de paso Ángeles de la Calle, ubicado en Circasia, Quindío.
+        albergados en el hogar de paso Ángeles de la Calle.
       </p>
 
       <div>

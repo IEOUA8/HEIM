@@ -45,7 +45,7 @@ export default async function PrintRegistrations({
       <header className="mb-6 border-b-2 border-brand-forest pb-4">
         <h1 className="text-2xl font-bold text-brand-forest">Caminata por los animales · HEIM</h1>
         <p className="text-sm text-brand-forest/70">
-          Lista de inscritos · 6 de septiembre de 2026 · Circasia, Quindío
+          Lista de inscritos · 6 de septiembre de 2026
         </p>
         <p className="mt-1 text-xs text-brand-forest/60">
           Total: {rows.length} inscripciones · {withPet} con mascota · {rows.length - withPet} sin
