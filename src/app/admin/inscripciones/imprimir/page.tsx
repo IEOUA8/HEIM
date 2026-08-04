@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getRegistrations } from "@/lib/admin/data";
+import { getRegistrations, type RegistrationFilters } from "@/lib/admin/data";
 import { STATUS_LABELS } from "@/lib/registration/status";
 import { PrintButton } from "@/components/admin/PrintButton";
 
@@ -17,8 +17,19 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export default async function PrintRegistrations() {
-  const rows = await getRegistrations();
+export default async function PrintRegistrations({
+  searchParams,
+}: PageProps<"/admin/inscripciones/imprimir">) {
+  const sp = await searchParams;
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const filters: RegistrationFilters = {
+    q: first(sp.q),
+    status: first(sp.status),
+    pet: first(sp.pet) as "with" | "without" | undefined,
+    size: first(sp.size),
+    attention: first(sp.attention),
+  };
+  const rows = await getRegistrations(filters);
   const withPet = rows.filter((r) => r.attends_with_pet).length;
 
   return (

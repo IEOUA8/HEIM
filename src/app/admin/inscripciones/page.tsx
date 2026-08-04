@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getRegistrations } from "@/lib/admin/data";
+import { getRegistrations, type RegistrationFilters } from "@/lib/admin/data";
 import { StatusBadge, AttentionBadge } from "@/components/admin/StatusBadge";
+import { FiltersBar } from "@/components/admin/FiltersBar";
 
 export const dynamic = "force-dynamic";
 
@@ -21,29 +22,52 @@ function formatDate(iso: string) {
   });
 }
 
-export default async function AdminRegistrations() {
-  const rows = await getRegistrations();
+export default async function AdminRegistrations({
+  searchParams,
+}: PageProps<"/admin/inscripciones">) {
+  const sp = await searchParams;
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const filters: RegistrationFilters = {
+    q: first(sp.q),
+    status: first(sp.status),
+    pet: first(sp.pet) as "with" | "without" | undefined,
+    size: first(sp.size),
+    attention: first(sp.attention),
+  };
+  const rows = await getRegistrations(filters);
+  const qs = new URLSearchParams(
+    Object.entries(filters).filter(([, v]) => v) as [string, string][],
+  ).toString();
+  const hasFilters = qs.length > 0;
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand-forest">Inscripciones</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-sm text-brand-forest/60">{rows.length} registros</span>
-          {rows.length > 0 && (
-            <Link
-              href="/admin/inscripciones/imprimir"
-              className="rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-ivory"
-            >
-              Imprimir / PDF
-            </Link>
-          )}
+          <a
+            href={`/api/admin/exports/registrations.csv${qs ? `?${qs}` : ""}`}
+            className="rounded-full border-2 border-brand-forest/15 px-4 py-2 text-sm font-semibold text-brand-forest hover:border-brand-forest/40"
+          >
+            Exportar CSV
+          </a>
+          <Link
+            href={`/admin/inscripciones/imprimir${qs ? `?${qs}` : ""}`}
+            className="rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-ivory"
+          >
+            Imprimir / PDF
+          </Link>
         </div>
       </header>
 
+      <FiltersBar />
+
       {rows.length === 0 ? (
         <div className="rounded-2xl bg-white p-8 text-center text-brand-forest/50 shadow-[0_10px_30px_-12px_rgba(35,63,53,0.18)]">
-          Aún no hay inscripciones. Cuando alguien complete el formulario aparecerá aquí.
+          {hasFilters
+            ? "No hay inscripciones que coincidan con los filtros."
+            : "Aún no hay inscripciones. Cuando alguien complete el formulario aparecerá aquí."}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl bg-white shadow-[0_10px_30px_-12px_rgba(35,63,53,0.18)]">

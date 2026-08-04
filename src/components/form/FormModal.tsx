@@ -31,6 +31,7 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [phase, setPhase] = useState<"steps" | "review" | "success" | "submitting">("steps");
   const [code, setCode] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isDuplicate, setIsDuplicate] = useState(false);
 
   const stepList = useMemo(() => activeSteps(state), [state]);
   const stepIndex = Math.min(state.currentStep, stepList.length - 1);
@@ -81,20 +82,30 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
     if (stepIndex > 0) form.setStep(stepIndex - 1);
   };
 
-  const submit = async () => {
+  const submit = async (force = false) => {
     setPhase("submitting");
     setSubmitError(null);
+    if (force) setIsDuplicate(false);
     try {
       const res = await fetch("/api/registrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          allowDuplicate: force,
           attendsWithPet: state.attendsWithPet,
           participant: state.participant,
           pet: state.attendsWithPet ? state.pet : undefined,
           consents: state.consents,
         }),
       });
+      if (res.status === 409) {
+        // Posible inscripción duplicada (§8): no crear duplicado silencioso.
+        const json = (await res.json()) as { error: string; duplicate?: boolean };
+        setIsDuplicate(!!json.duplicate);
+        setSubmitError(json.error);
+        setPhase("review");
+        return;
+      }
       if (!res.ok) throw new Error(`status ${res.status}`);
       const json = (await res.json()) as { code: string };
       setCode(json.code);
@@ -169,6 +180,8 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
                 <ReviewScreen
                   state={state}
                   error={submitError}
+                  isDuplicate={isDuplicate}
+                  onForceSubmit={() => submit(true)}
                   onEdit={() => {
                     setDirection(-1);
                     setPhase("steps");
@@ -226,10 +239,14 @@ function Row({ label, value }: { label: string; value?: string }) {
 function ReviewScreen({
   state,
   error,
+  isDuplicate,
+  onForceSubmit,
   onEdit,
 }: {
   state: ReturnType<typeof useRegistrationForm>["state"];
   error?: string | null;
+  isDuplicate?: boolean;
+  onForceSubmit?: () => void;
   onEdit: () => void;
 }) {
   const doc = state.participant.documentNumber
@@ -248,9 +265,18 @@ function ReviewScreen({
         </button>
       </div>
       {error && (
-        <p className="rounded-xl bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange" role="alert">
-          {error}
-        </p>
+        <div className="space-y-2 rounded-xl bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange" role="alert">
+          <p>{error}</p>
+          {isDuplicate && onForceSubmit && (
+            <button
+              type="button"
+              onClick={onForceSubmit}
+              className="font-semibold underline underline-offset-2"
+            >
+              Continuar de todas formas
+            </button>
+          )}
+        </div>
       )}
       <div className="divide-y divide-brand-forest/10 rounded-2xl bg-white px-4">
         <Row label="Nombre" value={state.participant.fullName} />

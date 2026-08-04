@@ -139,15 +139,145 @@ export async function getRegistrationDetail(id: string): Promise<RegistrationDet
   };
 }
 
-export async function getRegistrations(): Promise<RegistrationRow[]> {
+export type RegistrationFilters = {
+  q?: string;
+  status?: string;
+  pet?: "with" | "without";
+  size?: string;
+  attention?: string;
+};
+
+export async function getRegistrations(filters: RegistrationFilters = {}): Promise<RegistrationRow[]> {
   const supabase = createServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("registrations")
     .select(
       "id, registration_code, status, full_name, phone_e164, email, attends_with_pet, internal_attention_level, created_at, pets(name, size, requires_muzzle)",
     )
     .order("created_at", { ascending: false });
 
+  if (filters.q) {
+    const q = filters.q.replace(/[%,]/g, "");
+    query = query.or(
+      `full_name.ilike.%${q}%,phone_e164.ilike.%${q}%,email.ilike.%${q}%,registration_code.ilike.%${q}%`,
+    );
+  }
+  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.pet === "with") query = query.eq("attends_with_pet", true);
+  if (filters.pet === "without") query = query.eq("attends_with_pet", false);
+  if (filters.attention) query = query.eq("internal_attention_level", filters.attention);
+
+  const { data, error } = await query;
   if (error || !data) return [];
-  return data as RegistrationRow[];
+
+  let rows = data as RegistrationRow[];
+  // El tamaño vive en la mascota: se filtra en memoria (dataset acotado por evento).
+  if (filters.size) rows = rows.filter((r) => r.pets?.some((p) => p.size === filters.size));
+  return rows;
+}
+
+/** Fila completa para exportación (§20), con documento descifrado y enmascarado. */
+export type ExportRow = {
+  registration_code: string;
+  created_at: string;
+  status: string;
+  full_name: string;
+  phone_e164: string;
+  email: string | null;
+  document_type: string | null;
+  document_masked: string;
+  attends_with_pet: boolean;
+  pet_name: string;
+  pet_breed: string;
+  pet_size: string;
+  behavior: string;
+  requires_muzzle: boolean;
+  behavior_notes: string;
+  health_status: string;
+  safety_accepted: boolean;
+  privacy_accepted: boolean;
+  marketing_accepted: boolean;
+  image_consent_accepted: boolean;
+  internal_attention_level: string;
+};
+
+export async function getRegistrationsForExport(
+  filters: RegistrationFilters = {},
+): Promise<ExportRow[]> {
+  const supabase = createServerClient();
+  let query = supabase
+    .from("registrations")
+    .select(
+      "*, pets(name, breed, size, behavior_tags, behavior_notes, health_status, requires_muzzle)",
+    )
+    .order("created_at", { ascending: false });
+
+  if (filters.q) {
+    const q = filters.q.replace(/[%,]/g, "");
+    query = query.or(
+      `full_name.ilike.%${q}%,phone_e164.ilike.%${q}%,email.ilike.%${q}%,registration_code.ilike.%${q}%`,
+    );
+  }
+  if (filters.status) query = query.eq("status", filters.status);
+  if (filters.pet === "with") query = query.eq("attends_with_pet", true);
+  if (filters.pet === "without") query = query.eq("attends_with_pet", false);
+  if (filters.attention) query = query.eq("internal_attention_level", filters.attention);
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  let rows = data as Record<string, unknown>[];
+  if (filters.size) {
+    rows = rows.filter((r) =>
+      ((r.pets as { size: string }[]) ?? []).some((p) => p.size === filters.size),
+    );
+  }
+
+  return rows.map((r) => {
+    const pet = ((r.pets as Record<string, unknown>[]) ?? [])[0];
+    let masked = "—";
+    try {
+      if (r.document_number_encrypted) {
+        masked = maskDocument(decryptDocument(r.document_number_encrypted as string));
+      }
+    } catch {
+      masked = "—";
+    }
+    return {
+      registration_code: r.registration_code as string,
+      created_at: r.created_at as string,
+      status: r.status as string,
+      full_name: r.full_name as string,
+      phone_e164: r.phone_e164 as string,
+      email: (r.email as string) ?? "",
+      document_type: (r.document_type as string) ?? "",
+      document_masked: masked,
+      attends_with_pet: r.attends_with_pet as boolean,
+      pet_name: (pet?.name as string) ?? "",
+      pet_breed: (pet?.breed as string) ?? "",
+      pet_size: (pet?.size as string) ?? "",
+      behavior: ((pet?.behavior_tags as string[]) ?? []).join("; "),
+      requires_muzzle: (pet?.requires_muzzle as boolean) ?? false,
+      behavior_notes: (pet?.behavior_notes as string) ?? "",
+      health_status: (pet?.health_status as string) ?? "",
+      safety_accepted: r.safety_accepted as boolean,
+      privacy_accepted: r.privacy_accepted as boolean,
+      marketing_accepted: r.marketing_accepted as boolean,
+      image_consent_accepted: r.image_consent_accepted as boolean,
+      internal_attention_level: r.internal_attention_level as string,
+    };
+  });
+}
+
+/** Detecta una inscripción activa con el mismo teléfono (§8, evita duplicados). */
+export async function findActiveByPhone(phone: string): Promise<{ code: string } | null> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("registrations")
+    .select("registration_code, status")
+    .eq("phone_e164", phone)
+    .neq("status", "CANCELADA")
+    .limit(1)
+    .maybeSingle();
+  return data ? { code: data.registration_code } : null;
 }

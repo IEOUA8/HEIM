@@ -3,12 +3,14 @@ import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
 import { encryptDocument } from "@/lib/security/document";
 import { generateRegistrationCode, deriveAttentionLevel } from "@/lib/registration/code";
+import { findActiveByPhone } from "@/lib/admin/data";
 import { eventConfig } from "@/config/event";
 
 export const runtime = "nodejs";
 
 // Validación de servidor (§13). Refleja el estado del formulario (§16).
 const payloadSchema = z.object({
+  allowDuplicate: z.boolean().optional(),
   attendsWithPet: z.boolean(),
   participant: z.object({
     fullName: z.string().trim().min(3).max(100),
@@ -64,6 +66,23 @@ export async function POST(request: Request) {
       .single();
     if (eventError || !event) {
       return NextResponse.json({ error: "Evento no encontrado." }, { status: 404 });
+    }
+
+    // Evitar duplicados silenciosos por teléfono (§8). El usuario puede
+    // confirmar que desea continuar de todas formas (allowDuplicate).
+    if (!data.allowDuplicate) {
+      const existing = await findActiveByPhone(data.participant.phone);
+      if (existing) {
+        return NextResponse.json(
+          {
+            error:
+              "Encontramos una inscripción asociada a estos datos. Puedes revisarla o crear una nueva.",
+            duplicate: true,
+            existingCode: existing.code,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const code = generateRegistrationCode();
