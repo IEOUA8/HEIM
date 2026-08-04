@@ -64,9 +64,26 @@ Los pasos son declarativos. Edita `src/components/form/steps.tsx` y agrega un ob
 
 El motor filtra por `isActive`, recalcula el total de pasos y el progreso automáticamente.
 
+## Producción
+
+- **Formulario:** https://heim-caminata.vercel.app
+- **Panel admin:** https://heim-caminata.vercel.app/admin (contraseña en `ADMIN_PASSWORD`)
+- **Repo:** https://github.com/IEOUA8/HEIM — cada push a `main` despliega en Vercel.
+- **Supabase:** proyecto `HEIM` (`qxqfassgaccuoofivybp`), 7 tablas + evento `caminata-heim`.
+
+## Funcionando
+
+- Formulario tipo modal conectado a Supabase (`POST /api/registrations`).
+- Cifrado del documento (AES-256-GCM) y código único de inscripción.
+- Panel admin protegido (`proxy.ts` + cookie firmada): dashboard con KPIs,
+  distribución por tamaño y tabla de inscripciones con datos reales.
+- SEO completo: Open Graph con portada, Twitter Card, favicon (logo), JSON-LD.
+
 ## Pendiente (siguientes fases, §25)
 
-- Pasos 9 (salud) y consentimientos granulares de imagen.
-- API `POST /api/registrations` + cifrado del documento (§13, §17).
-- Correo de confirmación (Resend) y panel administrativo (`/admin`).
-- Políticas RLS en Supabase.
+- Pasos 9 (salud) y consentimiento de imagen separado; "Editar" en el resumen;
+  confirmación con descargar/calendario/compartir.
+- Migrar el acceso admin a Supabase Auth con roles (§11.1) y habilitar RLS (§17).
+- Detalle de inscripción, cambio de estados con historial, notas, filtros y
+  exportación CSV/XLSX (§11.3–§11.5, §20).
+- Correo de confirmación (Resend) y flujo de duplicados (§8).
