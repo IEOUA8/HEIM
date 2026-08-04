@@ -36,14 +36,6 @@ export type StepDef = {
 const petName = (s: RegistrationFormState) =>
   s.pet?.name?.trim() || "tu perro";
 
-const SIZE_OPTIONS = [
-  { value: "small", label: "Pequeño" },
-  { value: "medium", label: "Mediano" },
-  { value: "large", label: "Grande" },
-  { value: "giant", label: "Gigante" },
-  { value: "unknown", label: "No estoy seguro" },
-] as const;
-
 const BEHAVIOR_OPTIONS: { value: BehaviorTag; title: string; special?: boolean }[] = [
   { value: "friendly", title: "Es amigable y sociable." },
   { value: "needs_space", title: "Puede ponerse nervioso y necesita espacio.", special: true },
@@ -78,7 +70,7 @@ export const steps: StepDef[] = [
             <ChoiceCard
               selected={state.attendsWithPet === false}
               onSelect={() => update({ attendsWithPet: false })}
-              title="Asistiré sin mascota."
+              title="No, asistiré sin mascota."
             />
           )}
         </div>
@@ -249,38 +241,6 @@ export const steps: StepDef[] = [
               : undefined
           }
         />
-      </div>
-    ),
-  },
-
-  // Paso 7 — Raza y tamaño (condicional)
-  {
-    id: "pet-size",
-    section: "Tu perro",
-    isActive: (s) => s.attendsWithPet === true,
-    isValid: (s) => !!s.pet?.size,
-    render: ({ state, updatePet }) => (
-      <div className="space-y-4">
-        <StepHeader title={`Cuéntanos un poco sobre ${petName(state)}`} />
-        <TextField
-          label="Raza o mezcla"
-          placeholder="Mestizo / mezcla"
-          value={state.pet?.breed ?? ""}
-          onChange={(v) => updatePet({ breed: v })}
-        />
-        <div>
-          <p className="mb-2 text-sm font-medium text-brand-forest">Tamaño</p>
-          <div className="grid grid-cols-2 gap-2">
-            {SIZE_OPTIONS.map((o) => (
-              <ChoiceCard
-                key={o.value}
-                selected={state.pet?.size === o.value}
-                onSelect={() => updatePet({ size: o.value })}
-                title={o.label}
-              />
-            ))}
-          </div>
-        </div>
       </div>
     ),
   },

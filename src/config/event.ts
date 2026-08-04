@@ -33,11 +33,10 @@ export const eventConfig: EventConfig = {
   slug: "caminata-heim",
   beneficiary: "Hogar de paso Ángeles de la Calle, Circasia",
   purposeText:
-    "Tu participación ayuda a impulsar jornadas de esterilización para animales rescatados. Completar la inscripción toma aproximadamente 3 minutos.",
+    "Llegamos a nuestro primer año y queremos celebrarlo con nuevos proyectos para seguir ayudando, pero esta vez queremos hacerlo contigo.",
   includes: [
     "Póliza de seguro para el evento",
     "Snack para el participante y su perro",
-    "Actividad con propósito social",
   ],
   location: { name: "Circasia, Quindío" },
   startsAt: "2026-09-06T08:00:00-05:00",

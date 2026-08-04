@@ -21,25 +21,40 @@ export default function Home() {
         <h1 className="text-4xl font-bold leading-tight text-brand-forest text-balance">
           Camina con nosotros por quienes aún esperan un hogar
         </h1>
+        <p className="inline-flex items-center gap-2 rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-ivory">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+            <path
+              d="M7 3v3m10-3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Domingo 06 de septiembre de 2026 · Circasia, Quindío
+        </p>
         <p className="text-lg text-brand-forest/75">{eventConfig.purposeText}</p>
       </div>
 
-      <ul className="space-y-2">
-        {eventConfig.includes.map((item) => (
-          <li key={item} className="flex items-center gap-3 text-brand-forest/85">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-lime">
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-brand-forest" aria-hidden>
-                <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            {item}
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-3">
+        <h2 className="text-lg font-bold text-brand-forest">¿Qué incluye tu inscripción?</h2>
+        <ul className="space-y-2">
+          {eventConfig.includes.map((item) => (
+            <li key={item} className="flex items-center gap-3 text-brand-forest/85">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-lime">
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-brand-forest" aria-hidden>
+                  <path d="m5 13 4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <p className="text-sm text-brand-forest/60">
-        Cada aporte se destina a esterilizar animales rescatados por el{" "}
-        {eventConfig.beneficiary}.
+        Los fondos recaudados serán invertidos en la esterilización de los animales
+        albergados en el hogar de paso Ángeles de la Calle, ubicado en Circasia, Quindío.
       </p>
 
       <div>
