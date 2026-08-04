@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Sistema visual de marca HEIM — Caminata por los animales
+  Referencia: DOCUMENTO-MAESTRO.md §5 (Sistema visual de marca)
+  Los tokens definidos en @theme generan utilidades Tailwind:
+    bg-brand-forest, text-brand-forest, border-brand-lilac, rounded-card, etc.
+*/
+
+@theme {
+  /* Paleta cromática (§5.1) */
+  --color-brand-sky: #88b6c6;
+  --color-brand-forest: #233f35;
+  --color-brand-lilac: #9187b8;
+  --color-brand-orange: #cc621b;
+  --color-brand-lime: #d8de6f;
+  --color-brand-ivory: #f2f1e7;
+
+  /* Superficies y texto derivados (§5.2) */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f6ef;
+  --color-background: var(--color-brand-ivory);
+  --color-foreground: var(--color-brand-forest);
+
+  /* Tipografía (§5.4) — Manrope como principal, cargada vía next/font */
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  /* Radios de tarjeta (§5.5: 20–28 px) */
+  --radius-card: 24px;
+  --radius-card-lg: 28px;
+
+  /* Sombras suaves (§5.5) */
+  --shadow-soft: 0 10px 30px -12px rgba(35, 63, 53, 0.18);
+  --shadow-card: 0 24px 60px -24px rgba(35, 63, 53, 0.25);
+
+  /* Duración de animaciones entre pasos (§5.5: 180–280 ms) */
+  --animate-duration-step: 220ms;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    /* Tamaño base de texto móvil (§5.3: 16 px) */
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  /* Respeto por prefers-reduced-motion (§18 Accesibilidad) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Foco visible para navegación por teclado (§18) */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-lilac);
+    outline-offset: 2px;
+  }
 }

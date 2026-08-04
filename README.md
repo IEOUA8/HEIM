@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HEIM · Caminata por los animales
 
-## Getting Started
+Formulario inteligente de inscripción (tipo modal, por microdecisiones) + base para el panel administrativo.
+Especificación completa en [`DOCUMENTO-MAESTRO.md`](./DOCUMENTO-MAESTRO.md).
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4** — sistema de marca HEIM en `src/app/globals.css` (`@theme`)
+- **React Hook Form** + **Zod** — validación cliente/servidor
+- **Framer Motion** — transiciones entre pasos (§5.5)
+- **libphonenumber-js** — normalización de teléfono a E.164
+- **Supabase** (pendiente de conectar) — PostgreSQL, Auth, RLS, Storage
+
+## Arranque
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev      # http://localhost:3000
+npm run build    # build de producción
+npm run lint     # ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copia `.env.example` a `.env.local` y completa las credenciales de Supabase cuando estén disponibles.
+La app arranca en modo demostración sin backend (el envío simula el código de inscripción).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── page.tsx              Landing (Paso 0) + abre el modal
+│   ├── layout.tsx            Fuente Manrope + metadatos
+│   └── globals.css           Sistema de marca HEIM (@theme)
+├── components/
+│   ├── brand/Logo.tsx
+│   └── form/
+│       ├── FormModal.tsx     Modal + motor de pasos + resumen + confirmación
+│       ├── steps.tsx         Definición declarativa de los pasos (§7)
+│       ├── ChoiceCard.tsx  ProgressIndicator.tsx  StepHeader.tsx
+│       ├── TextField.tsx   NavigationControls.tsx
+├── config/event.ts           Contenido editable del evento (§26)
+├── lib/
+│   ├── form/useRegistrationForm.ts   Estado + persistencia localStorage (§10)
+│   ├── validation/registration.ts    Esquemas Zod (§9)
+│   └── supabase/client.ts            Cliente Supabase
+└── types/registration.ts     Estado global del formulario (§16)
 
-## Learn More
+supabase/schema.sql           Modelo de datos completo (§12)
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Cómo agregar o modificar un paso
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Los pasos son declarativos. Edita `src/components/form/steps.tsx` y agrega un objeto al arreglo `steps`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```ts
+{
+  id: "health",
+  section: "Tu perro",
+  isActive: (s) => s.attendsWithPet === true,   // lógica condicional (§8)
+  isValid: (s) => Boolean(s.pet?.healthStatus),  // gating de avance (§6.1)
+  render: ({ state, updatePet }) => ( /* ... */ ),
+}
+```
 
-## Deploy on Vercel
+El motor filtra por `isActive`, recalcula el total de pasos y el progreso automáticamente.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Pendiente (siguientes fases, §25)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Pasos 9 (salud) y consentimientos granulares de imagen.
+- API `POST /api/registrations` + cifrado del documento (§13, §17).
+- Correo de confirmación (Resend) y panel administrativo (`/admin`).
+- Políticas RLS en Supabase.
