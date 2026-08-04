@@ -73,17 +73,25 @@ El motor filtra por `isActive`, recalcula el total de pasos y el progreso autom�
 
 ## Funcionando
 
-- Formulario tipo modal conectado a Supabase (`POST /api/registrations`).
-- Cifrado del documento (AES-256-GCM) y código único de inscripción.
-- Panel admin protegido (`proxy.ts` + cookie firmada): dashboard con KPIs,
-  distribución por tamaño y tabla de inscripciones con datos reales.
+- **Formulario completo** (§7): 11 pasos con lógica condicional, salud (§9),
+  consentimientos separados (§11), resumen editable y confirmación con
+  código único, añadir al calendario, comprobante y compartir.
+- Conectado a Supabase (`POST /api/registrations`) con cifrado del documento
+  (AES-256-GCM) y persistencia local del borrador.
+- **Panel admin con Supabase Auth** (`@supabase/ssr`, gate en `proxy.ts`):
+  dashboard con KPIs, tabla, **detalle de inscripción** con documento
+  enmascarado, **cambio de estados con historial**, notas internas y
+  **vista imprimible / PDF** de la lista.
 - SEO completo: Open Graph con portada, Twitter Card, favicon (logo), JSON-LD.
+
+## Acceso admin
+
+`/admin/login` con Supabase Auth (correo + contraseña). El usuario admin se
+crea desde el dashboard de Supabase (Authentication → Users) o vía Admin API.
 
 ## Pendiente (siguientes fases, §25)
 
-- Pasos 9 (salud) y consentimiento de imagen separado; "Editar" en el resumen;
-  confirmación con descargar/calendario/compartir.
-- Migrar el acceso admin a Supabase Auth con roles (§11.1) y habilitar RLS (§17).
-- Detalle de inscripción, cambio de estados con historial, notas, filtros y
-  exportación CSV/XLSX (§11.3–§11.5, §20).
-- Correo de confirmación (Resend) y flujo de duplicados (§8).
+- Roles diferenciados (§11.1) y políticas RLS (§17).
+- Filtros/búsqueda y exportación CSV/XLSX en la tabla (§11.3, §20).
+- Flujo de duplicados por teléfono/documento (§8).
+- Correo de confirmación (Resend) — pospuesto por ahora.
