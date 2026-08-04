@@ -8,6 +8,7 @@ import { Logo } from "@/components/brand/Logo";
 import { ProgressIndicator } from "./ProgressIndicator";
 import { NavigationControls } from "./NavigationControls";
 import { StepHeader } from "./StepHeader";
+import { eventConfig } from "@/config/event";
 
 const DOC_LABELS: Record<string, string> = {
   cc: "Cédula de ciudadanía",
@@ -165,7 +166,15 @@ export function FormModal({ open, onClose }: { open: boolean; onClose: () => voi
               ) : phase === "success" ? (
                 <SuccessScreen code={code!} state={state} />
               ) : phase === "review" || phase === "submitting" ? (
-                <ReviewScreen state={state} error={submitError} />
+                <ReviewScreen
+                  state={state}
+                  error={submitError}
+                  onEdit={() => {
+                    setDirection(-1);
+                    setPhase("steps");
+                    form.setStep(0);
+                  }}
+                />
               ) : (
                 step?.render(api)
               )}
@@ -217,16 +226,27 @@ function Row({ label, value }: { label: string; value?: string }) {
 function ReviewScreen({
   state,
   error,
+  onEdit,
 }: {
   state: ReturnType<typeof useRegistrationForm>["state"];
   error?: string | null;
+  onEdit: () => void;
 }) {
   const doc = state.participant.documentNumber
     ? `${DOC_LABELS[state.participant.documentType] ?? ""} ••••${state.participant.documentNumber.slice(-4)}`
     : undefined;
   return (
     <div className="space-y-3">
-      <StepHeader title="Revisa tu inscripción" help="Confirma que todo esté correcto antes de enviar." />
+      <div className="flex items-start justify-between gap-3">
+        <StepHeader title="Revisa tu inscripción" help="Confirma que todo esté correcto antes de enviar." />
+        <button
+          type="button"
+          onClick={onEdit}
+          className="shrink-0 text-sm font-medium text-brand-lilac underline-offset-2 hover:underline"
+        >
+          Editar datos
+        </button>
+      </div>
       {error && (
         <p className="rounded-xl bg-brand-orange/10 px-4 py-3 text-sm text-brand-orange" role="alert">
           {error}
@@ -252,6 +272,20 @@ function ReviewScreen({
   );
 }
 
+function calendarUrl(code: string): string {
+  // Enlace a Google Calendar con los datos del evento (§7 Paso 13).
+  const start = "20260906T130000Z"; // 2026-09-06 08:00 -05:00 en UTC
+  const end = "20260906T160000Z";
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `${eventConfig.name} · HEIM`,
+    dates: `${start}/${end}`,
+    details: `Inscripción ${code}. ${eventConfig.purposeText}`,
+    location: eventConfig.location.name,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 function SuccessScreen({
   code,
   state,
@@ -259,6 +293,44 @@ function SuccessScreen({
   code: string;
   state: ReturnType<typeof useRegistrationForm>["state"];
 }) {
+  const downloadComprobante = () => {
+    const lines = [
+      "COMPROBANTE DE INSCRIPCIÓN — HEIM",
+      "Caminata por los animales · 6 de septiembre de 2026",
+      "",
+      `Código: ${code}`,
+      `Participante: ${state.participant.fullName}`,
+      state.attendsWithPet ? `Mascota: ${state.pet?.name ?? "—"}` : "Asiste sin mascota",
+      "",
+      "Recomendaciones: correa siempre, bolsas para desechos,",
+      "bozal cuando corresponda. ¡Gracias por participar!",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `comprobante-${code}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const share = async () => {
+    const shareData = {
+      title: "Caminata por los animales · HEIM",
+      text: "Me inscribí a la Caminata por los animales de HEIM. ¡Únete!",
+      url: "https://heim-caminata.vercel.app",
+    };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert("Enlace copiado para compartir.");
+      }
+    } catch {
+      // El usuario canceló el diálogo de compartir.
+    }
+  };
+
   return (
     <div className="space-y-4 py-2 text-center">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-lime">
@@ -274,10 +346,36 @@ function SuccessScreen({
         </p>
       </div>
       <div className="rounded-2xl border-2 border-dashed border-brand-forest/20 bg-white py-4">
-        <p className="text-xs uppercase tracking-wide text-brand-forest/50">
-          Código de inscripción
-        </p>
+        <p className="text-xs uppercase tracking-wide text-brand-forest/50">Código de inscripción</p>
         <p className="mt-1 text-xl font-bold tracking-wide text-brand-orange">{code}</p>
+      </div>
+      <div className="rounded-2xl bg-brand-sky/15 px-4 py-3 text-left text-sm text-brand-forest/80">
+        <p className="font-semibold text-brand-forest">Caminata por los animales</p>
+        <p>6 de septiembre de 2026 · {eventConfig.location.name}</p>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <a
+          href={calendarUrl(code)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full border-2 border-brand-forest/15 px-4 py-2.5 text-sm font-semibold text-brand-forest hover:border-brand-forest/40"
+        >
+          Añadir al calendario
+        </a>
+        <button
+          type="button"
+          onClick={downloadComprobante}
+          className="rounded-full border-2 border-brand-forest/15 px-4 py-2.5 text-sm font-semibold text-brand-forest hover:border-brand-forest/40"
+        >
+          Descargar comprobante
+        </button>
+        <button
+          type="button"
+          onClick={share}
+          className="rounded-full border-2 border-brand-forest/15 px-4 py-2.5 text-sm font-semibold text-brand-forest hover:border-brand-forest/40"
+        >
+          Compartir
+        </button>
       </div>
     </div>
   );

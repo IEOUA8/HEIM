@@ -328,6 +328,47 @@ export const steps: StepDef[] = [
     },
   },
 
+  // Paso 9 — Estado de salud y capacidad física (condicional)
+  {
+    id: "health",
+    section: "Tu perro",
+    isActive: (s) => s.attendsWithPet === true,
+    isValid: (s) =>
+      s.pet?.healthStatus === "healthy" ||
+      (s.pet?.healthStatus === "observation" && (s.pet?.healthNotes?.trim().length ?? 0) > 0),
+    render: ({ state, updatePet }) => {
+      const status = state.pet?.healthStatus ?? "healthy";
+      return (
+        <div className="space-y-4">
+          <StepHeader
+            title={`¿Confirmas que ${petName(state)} está en condiciones de realizar actividad física moderada?`}
+            help="La información es declarativa y preventiva, no una evaluación veterinaria."
+          />
+          <div className="space-y-3">
+            <ChoiceCard
+              selected={status === "healthy"}
+              onSelect={() => updatePet({ healthStatus: "healthy", healthNotes: "" })}
+              title="Sí, se encuentra en buen estado de salud."
+            />
+            <ChoiceCard
+              selected={status === "observation"}
+              onSelect={() => updatePet({ healthStatus: "observation" })}
+              title="Tengo una observación que deseo informar."
+            />
+          </div>
+          {status === "observation" && (
+            <TextField
+              label="Cuéntanos brevemente"
+              value={state.pet?.healthNotes ?? ""}
+              onChange={(v) => updatePet({ healthNotes: v })}
+              maxLength={300}
+            />
+          )}
+        </div>
+      );
+    },
+  },
+
   // Paso 10/11 — Recomendaciones y consentimientos (combinado)
   {
     id: "consents",
@@ -365,6 +406,12 @@ export const steps: StepDef[] = [
             selected={state.consents.marketing}
             onSelect={() => updateConsents({ marketing: !state.consents.marketing })}
             title="Quiero recibir información de futuras actividades de HEIM. (opcional)"
+          />
+          <ChoiceCard
+            multiple
+            selected={state.consents.imageUse}
+            onSelect={() => updateConsents({ imageUse: !state.consents.imageUse })}
+            title="Autorizo el uso de imágenes o material audiovisual del evento. (opcional)"
           />
         </div>
       </div>
